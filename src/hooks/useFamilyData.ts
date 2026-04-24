@@ -12,7 +12,6 @@ import type {
   Person,
   RawFamilyData,
   RawHistoricalEvent,
-  RawMigrationRoute,
   RawPerson,
   RawTimelineEvent,
   TimelineEvent,
@@ -95,18 +94,6 @@ function resolveEventBranch(
   );
 }
 
-function normalizeMigrationRoute(route: RawMigrationRoute): MigrationRoute {
-  const [startGeneration, endGeneration] = route.generation_range;
-  if (startGeneration === undefined || endGeneration === undefined) {
-    throw new Error(`Rota migratoria invalida: ${route.id}`);
-  }
-
-  return {
-    ...route,
-    generation_range: [startGeneration, endGeneration],
-  };
-}
-
 function normalizeHistoricalEvent(event: RawHistoricalEvent): HistoricalEvent {
   return {
     ...event,
@@ -124,13 +111,26 @@ function normalizeFamilyData(raw: RawFamilyData): FamilyData {
     country: event.country ?? null,
     coordinates: event.coordinates ?? null,
     branch: resolveEventBranch(event, personsById),
+    year_approx: (event as RawTimelineEvent & { year_approx?: boolean }).year_approx ?? false,
+    profession: (event as RawTimelineEvent & { profession?: string[] }).profession ?? [],
+  }));
+
+  const migration_routes: MigrationRoute[] = raw.migration_routes.map((route) => ({
+    id: route.id,
+    from_place: route.from_place,
+    to_place: route.to_place,
+    from_coordinates: route.from_coordinates,
+    to_coordinates: route.to_coordinates,
+    period: route.period,
+    key_person: route.key_person,
+    description: route.description,
   }));
 
   return {
     ...raw,
     persons,
     timeline_events,
-    migration_routes: raw.migration_routes.map(normalizeMigrationRoute),
+    migration_routes,
     historical_context: raw.historical_context.map(normalizeHistoricalEvent),
   };
 }
@@ -141,7 +141,7 @@ export function useFamilyData(): UseFamilyDataReturn {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/data/familia_toledo.json") // Unica linha que muda na Etapa 2.
+    fetch("/data/familia_toledo.json")
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Erro ao carregar dados familiares: ${response.status}`);

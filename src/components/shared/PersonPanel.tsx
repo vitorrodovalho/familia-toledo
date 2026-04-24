@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Branch, Person } from "@/types/family";
 import { useFamilyStore } from "@/store/familyStore";
@@ -52,7 +54,7 @@ function formatBirth(person: Person): string {
   }
 
   const approximate = person.birth_year_approx ? " (aprox.)" : "";
-  const place = [person.birth_place, person.birth_country]
+  const place = [person.birth_place, person.birth_country ? (countryLabels[person.birth_country] ?? person.birth_country) : null]
     .filter(Boolean)
     .join(", ");
 
@@ -64,7 +66,9 @@ function formatDeath(person: Person): string | null {
     return null;
   }
 
-  return `†${person.death_year}`;
+  const approximate = person.death_year_approx ? " (aprox.)" : "";
+  const place = person.death_place ? `, ${person.death_place}` : "";
+  return `†${person.death_year}${approximate}${place}`;
 }
 
 function getCameraTarget(person: Person): [number, number, number] {
@@ -108,6 +112,39 @@ function RelationButton({
   );
 }
 
+function PersonAvatar({
+  person,
+  branchColor,
+}: {
+  person: Person;
+  branchColor: string;
+}) {
+  const [imgError, setImgError] = useState(false);
+
+  if (person.photo_url && !imgError) {
+    return (
+      <div className="relative mb-5 h-24 w-24 overflow-hidden rounded-full border-2 border-white/20">
+        <Image
+          src={person.photo_url}
+          alt={person.name}
+          fill
+          className="object-cover object-top"
+          onError={() => setImgError(true)}
+          sizes="96px"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`mb-5 flex h-24 w-24 items-center justify-center rounded-full text-2xl font-semibold text-white ${branchColor}`}
+    >
+      {getInitials(person.name)}
+    </div>
+  );
+}
+
 export function PersonPanel({
   personId,
   personsById,
@@ -130,11 +167,11 @@ export function PersonPanel({
   const otherParents = parents.filter(
     (parent) => parent.id !== father?.id && parent.id !== mother?.id,
   );
-  const spouse = person
+  const spouses = person
     ? person.spouses
         .map((spouseId) => personsById.get(spouseId))
-        .find((item): item is Person => item !== undefined) ?? null
-    : null;
+        .filter((item): item is Person => item !== undefined)
+    : [];
   const death = person ? formatDeath(person) : null;
 
   return (
@@ -156,19 +193,57 @@ export function PersonPanel({
             ×
           </button>
 
-          <div
-            className={`mb-5 flex h-20 w-20 items-center justify-center rounded-full text-2xl font-semibold text-white ${branchColors[person.branch]}`}
-          >
-            {getInitials(person.name)}
-          </div>
+          <PersonAvatar
+            person={person}
+            branchColor={branchColors[person.branch]}
+          />
 
           <h2 className="font-serif text-3xl font-semibold leading-tight text-white">
             {person.name}
           </h2>
+
+          {person.titles.length > 0 ? (
+            <p className="mt-1 text-sm italic text-sand/60">
+              {person.titles.join(" · ")}
+            </p>
+          ) : null}
+
           <div className="mt-4 space-y-1 text-sm text-sand/75">
             <p>{formatBirth(person)}</p>
             {death ? <p>{death}</p> : null}
+            {person.baptism_date || person.baptism_place ? (
+              <p className="text-sand/50">
+                Batismo: {[person.baptism_date, person.baptism_place].filter(Boolean).join(", ")}
+              </p>
+            ) : null}
+            {person.burial_place ? (
+              <p className="text-sand/50">Sep.: {person.burial_place}</p>
+            ) : null}
           </div>
+
+          {person.profession.length > 0 ? (
+            <div className="mt-4 flex flex-wrap gap-1">
+              {person.profession.map((prof) => (
+                <span
+                  key={prof}
+                  className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-sand/70"
+                >
+                  {prof}
+                </span>
+              ))}
+            </div>
+          ) : null}
+
+          {person.bio_narrative ? (
+            <section className="mt-6">
+              <h3 className="border-b border-white/15 pb-2 text-sm font-semibold uppercase text-sand/60">
+                Biografia
+              </h3>
+              <p className="mt-3 text-xs leading-relaxed text-sand/60 line-clamp-6">
+                {person.bio_narrative}
+              </p>
+            </section>
+          ) : null}
 
           <section className="mt-8">
             <h3 className="border-b border-white/15 pb-2 text-sm font-semibold uppercase text-sand/60">
@@ -197,16 +272,37 @@ export function PersonPanel({
                   onClick={navigateToPerson}
                 />
               ))}
-              {spouse ? (
+              {spouses.map((spouse) => (
                 <RelationButton
+                  key={spouse.id}
                   label="Cônjuge"
                   person={spouse}
                   onClick={navigateToPerson}
                 />
+              ))}
+              {person.marriages.length > 0 && spouses.length === 0 ? (
+                <>
+                  {person.marriages.map((marriage) => (
+                    <div
+                      key={marriage.order}
+                      className="flex w-full items-center justify-between gap-3 border-b border-white/10 py-2 text-sm text-sand/80"
+                    >
+                      <span className="text-sand/50">
+                        {person.marriages.length > 1 ? `${marriage.order}º Cônjuge` : "Cônjuge"}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-right font-medium">
+                        {marriage.spouse_name}
+                        {marriage.year ? ` (${marriage.year})` : ""}
+                      </span>
+                    </div>
+                  ))}
+                </>
               ) : null}
               <p className="flex items-center justify-between border-b border-white/10 py-2 text-sm text-sand/80">
                 <span className="text-sand/50">Filhos</span>
-                <span className="font-medium">{person.children.length} pessoas</span>
+                <span className="font-medium">
+                  {person.children_count ?? person.children.length} pessoas
+                </span>
               </p>
             </div>
           </section>
@@ -225,13 +321,19 @@ export function PersonPanel({
                 <dd className="font-medium">{person.generation_level}ª</dd>
               </div>
               <div className="flex justify-between gap-4">
-                <dt className="text-sand/50">País</dt>
+                <dt className="text-sand/50">País de nascimento</dt>
                 <dd className="text-right font-medium">
                   {person.birth_country
                     ? countryLabels[person.birth_country] ?? person.birth_country
                     : "Não informado"}
                 </dd>
               </div>
+              {person.marital_status ? (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-sand/50">Estado civil</dt>
+                  <dd className="text-right font-medium capitalize">{person.marital_status}</dd>
+                </div>
+              ) : null}
             </dl>
           </section>
         </motion.aside>
