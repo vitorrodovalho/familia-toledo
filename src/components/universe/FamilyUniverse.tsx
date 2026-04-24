@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AdaptiveDpr, OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import type { FamilyGraph, PersonNode } from "@/types/family";
@@ -15,6 +15,48 @@ interface HoveredNode {
   pointer: RaycastPointer;
 }
 
+function getGraphView(nodes: PersonNode[]) {
+  if (!nodes.length) {
+    return {
+      center: [0, -420, 0] as [number, number, number],
+      camera: [0, -180, 760] as [number, number, number],
+    };
+  }
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
+
+  for (const node of nodes) {
+    minX = Math.min(minX, node.x);
+    maxX = Math.max(maxX, node.x);
+    minY = Math.min(minY, node.y);
+    maxY = Math.max(maxY, node.y);
+    minZ = Math.min(minZ, node.z);
+    maxZ = Math.max(maxZ, node.z);
+  }
+
+  const center: [number, number, number] = [
+    (minX + maxX) / 2,
+    (minY + maxY) / 2,
+    (minZ + maxZ) / 2,
+  ];
+  const spread = Math.max(maxX - minX, maxY - minY, maxZ - minZ);
+  const distance = Math.max(620, Math.min(1050, spread * 0.72));
+
+  return {
+    center,
+    camera: [center[0], center[1] + distance * 0.22, center[2] + distance] as [
+      number,
+      number,
+      number,
+    ],
+  };
+}
+
 function formatTooltipMeta(node: PersonNode): string {
   const year = node.is_living
     ? "Vivo(a)"
@@ -26,18 +68,19 @@ function formatTooltipMeta(node: PersonNode): string {
 
 export function FamilyUniverse({ graph }: { graph: FamilyGraph }) {
   const [hoveredNode, setHoveredNode] = useState<HoveredNode | null>(null);
+  const graphView = useMemo(() => getGraphView(graph.nodes), [graph.nodes]);
 
   return (
     <div className="absolute inset-0">
       <Canvas
-        camera={{ position: [0, 200, 600], fov: 60 }}
+        camera={{ position: graphView.camera, fov: 52 }}
         gl={{ antialias: true, alpha: false }}
         style={{ background: "#0A0F1A" }}
         dpr={[1, 2]}
       >
         <AdaptiveDpr pixelated />
-        <ambientLight intensity={0.3} />
-        <pointLight position={[0, 200, 0]} intensity={1} />
+        <ambientLight intensity={0.6} />
+        <pointLight position={[0, 220, 420]} intensity={1.5} />
 
         <StarBackground count={2000} />
         <PersonNodes
@@ -55,8 +98,9 @@ export function FamilyUniverse({ graph }: { graph: FamilyGraph }) {
           enableRotate
           zoomSpeed={0.5}
           panSpeed={0.5}
-          minDistance={50}
-          maxDistance={2000}
+          minDistance={35}
+          maxDistance={2600}
+          target={graphView.center}
         />
       </Canvas>
 

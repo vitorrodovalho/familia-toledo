@@ -7,10 +7,10 @@ import { useFamilyStore } from "@/store/familyStore";
 import { useRaycasting, type RaycastPointer } from "./useRaycasting";
 
 const BRANCH_COLORS: Record<Branch, string> = {
-  toledo_espanha: "#3b82f6",
-  rodovalho: "#22c55e",
-  toledo_pisa: "#a855f7",
-  toledo_rodovalho: "#C4703A",
+  toledo_espanha: "#60a5fa",
+  rodovalho: "#4ade80",
+  toledo_pisa: "#c084fc",
+  toledo_rodovalho: "#fb923c",
 };
 
 interface PersonNodesProps {
@@ -19,13 +19,14 @@ interface PersonNodesProps {
 }
 
 function getNodeSize(node: PersonNode): number {
-  return Math.min(0.8 + node.descendant_count * 0.05, 4);
+  return Math.min(3.2 + node.descendant_count * 0.08, 11);
 }
 
 function createNodeMaterial() {
   return new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
+    blending: THREE.AdditiveBlending,
     vertexShader: `
       attribute vec3 instanceColor;
       attribute float instanceOpacity;
@@ -46,8 +47,8 @@ function createNodeMaterial() {
       varying vec3 vNormal;
 
       void main() {
-        float light = dot(normalize(vNormal), normalize(vec3(0.35, 0.7, 1.0))) * 0.45 + 0.65;
-        vec3 glow = vColor * light + vColor * 0.35;
+        float light = dot(normalize(vNormal), normalize(vec3(0.35, 0.7, 1.0))) * 0.35 + 0.75;
+        vec3 glow = vColor * light * 1.9 + vColor * 0.55;
         gl_FragColor = vec4(glow, vOpacity);
       }
     `,
@@ -75,13 +76,13 @@ export function PersonNodes({ nodes, onHoverNode }: PersonNodesProps) {
     nodes.forEach((node, index) => {
       const active = activeBranches.has(node.branch);
       dummy.position.set(node.x, node.y, node.z);
-      dummy.scale.setScalar(active ? getNodeSize(node) : getNodeSize(node) * 0.65);
+      dummy.scale.setScalar(active ? getNodeSize(node) : getNodeSize(node) * 0.45);
       dummy.updateMatrix();
       mesh.setMatrixAt(index, dummy.matrix);
 
       color.set(BRANCH_COLORS[node.branch] ?? "#ffffff");
       mesh.setColorAt(index, color);
-      opacities[index] = active ? 0.92 : 0.16;
+      opacities[index] = active ? 1 : 0.1;
     });
 
     geometry.setAttribute(

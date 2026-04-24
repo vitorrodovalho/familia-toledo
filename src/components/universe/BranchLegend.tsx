@@ -3,10 +3,10 @@
 import type { Branch } from "@/types/family";
 
 const branches: Array<{ key: Branch; label: string; color: string }> = [
-  { key: "toledo_espanha", label: "Toledo ES/MX", color: "#3b82f6" },
-  { key: "rodovalho", label: "Rodovalho", color: "#22c55e" },
-  { key: "toledo_pisa", label: "Toledo Pisa", color: "#a855f7" },
-  { key: "toledo_rodovalho", label: "Toledo Rodovalho", color: "#C4703A" },
+  { key: "toledo_espanha", label: "Toledo ES/MX", color: "#60a5fa" },
+  { key: "rodovalho", label: "Rodovalho", color: "#4ade80" },
+  { key: "toledo_pisa", label: "Toledo Pisa", color: "#c084fc" },
+  { key: "toledo_rodovalho", label: "Toledo Rodovalho", color: "#fb923c" },
 ];
 
 export function BranchLegend() {
