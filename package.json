@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "commit:push": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/git-save.ps1 -UseCopilot -Yes",
     "lint": "next lint"
   },
   "dependencies": {
