@@ -12,8 +12,9 @@ interface FamilyEdgesProps {
 
 export function FamilyEdges({ edges, nodes }: FamilyEdgesProps) {
   const activeBranches = useFamilyStore((state) => state.activeBranches);
-  const lineGeometry = useMemo(() => {
+  const { primaryGeometry, glowGeometry } = useMemo(() => {
     const positions: number[] = [];
+    const glowPositions: number[] = [];
 
     for (const edge of edges) {
       const source = nodes.get(edge.source);
@@ -30,24 +31,54 @@ export function FamilyEdges({ edges, nodes }: FamilyEdgesProps) {
 
       positions.push(source.x, source.y, source.z);
       positions.push(target.x, target.y, target.z);
+
+      if (edge.type === "parent-child") {
+        glowPositions.push(source.x, source.y, source.z);
+        glowPositions.push(target.x, target.y, target.z);
+      }
     }
 
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute(
+    const primary = new THREE.BufferGeometry();
+    primary.setAttribute(
       "position",
       new THREE.Float32BufferAttribute(positions, 3),
     );
 
-    return geometry;
+    const glow = new THREE.BufferGeometry();
+    glow.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(glowPositions, 3),
+    );
+
+    return { primaryGeometry: primary, glowGeometry: glow };
   }, [activeBranches, edges, nodes]);
 
   useEffect(() => {
-    return () => lineGeometry.dispose();
-  }, [lineGeometry]);
+    return () => {
+      primaryGeometry.dispose();
+      glowGeometry.dispose();
+    };
+  }, [glowGeometry, primaryGeometry]);
 
   return (
-    <lineSegments geometry={lineGeometry}>
-      <lineBasicMaterial color="#334155" transparent opacity={0.3} />
-    </lineSegments>
+    <>
+      <lineSegments geometry={primaryGeometry} frustumCulled={false}>
+        <lineBasicMaterial
+          color="#94a3b8"
+          transparent
+          opacity={0.42}
+          depthWrite={false}
+        />
+      </lineSegments>
+      <lineSegments geometry={glowGeometry} frustumCulled={false}>
+        <lineBasicMaterial
+          color="#f8fafc"
+          transparent
+          opacity={0.18}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </lineSegments>
+    </>
   );
 }
