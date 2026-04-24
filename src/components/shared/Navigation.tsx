@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const links = [
   { href: "/", label: "Universo 3D" },
   { href: "/timeline", label: "Linha do Tempo" },
+  { href: "/tree", label: "Árvore" },
 ];
 
 function isActivePath(pathname: string, href: string): boolean {
