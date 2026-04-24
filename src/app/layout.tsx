@@ -17,11 +17,11 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   metadataBase: new URL("http://localhost:3000"),
-  title: "Memória Viva | Toledo Rodovalho",
-  description: "Universo familiar interativo da família Toledo Rodovalho.",
+  title: "Família Toledo",
+  description: "Universo familiar interativo da Família Toledo.",
   openGraph: {
-    title: "Memória Viva | Toledo Rodovalho",
-    description: "Universo familiar interativo da família Toledo Rodovalho.",
+    title: "Família Toledo",
+    description: "Universo familiar interativo da Família Toledo.",
     images: ["/og-image.png"],
   },
 };
