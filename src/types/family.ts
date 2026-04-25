@@ -161,9 +161,29 @@ export interface FamilyGraph {
   byId: Map<string, PersonNode>;
 }
 
-export interface RawPerson extends Omit<Person, "gender" | "branch"> {
+type RawStringArray = string[] | null | undefined;
+type RawMarriageArray = Marriage[] | null | undefined;
+
+export interface RawPerson
+  extends Omit<
+    Person,
+    | "gender"
+    | "branch"
+    | "parents"
+    | "children"
+    | "spouses"
+    | "profession"
+    | "titles"
+    | "marriages"
+  > {
   gender: string;
   branch: string;
+  parents: RawStringArray;
+  children: RawStringArray;
+  spouses: RawStringArray;
+  profession: RawStringArray;
+  titles: RawStringArray;
+  marriages: RawMarriageArray;
 }
 
 export interface RawTimelineEvent

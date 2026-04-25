@@ -8,6 +8,7 @@ import type {
   Gender,
   HistoricalEvent,
   HistoricalType,
+  Marriage,
   MigrationRoute,
   Person,
   RawFamilyData,
@@ -54,6 +55,16 @@ function normalizeGender(value: string): Gender {
   return isOneOf(value, GENDERS) ? value : "unknown";
 }
 
+function normalizeStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function normalizeMarriageArray(value: unknown): Marriage[] {
+  return Array.isArray(value) ? value : [];
+}
+
 function normalizeEventType(value: string): EventType {
   if (!isOneOf(value, EVENT_TYPES)) {
     throw new Error(`Tipo de evento invalido: ${value}`);
@@ -80,6 +91,12 @@ function normalizePerson(rawPerson: RawPerson): Person {
     ...rawPerson,
     gender: normalizeGender(rawPerson.gender),
     branch,
+    parents: normalizeStringArray(rawPerson.parents),
+    children: normalizeStringArray(rawPerson.children),
+    spouses: normalizeStringArray(rawPerson.spouses),
+    profession: normalizeStringArray(rawPerson.profession),
+    titles: normalizeStringArray(rawPerson.titles),
+    marriages: normalizeMarriageArray(rawPerson.marriages),
   };
 }
 
