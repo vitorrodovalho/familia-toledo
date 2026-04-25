@@ -17,6 +17,10 @@ const countryLabels: Record<string, string> = {
 const bookDescription =
   "A genealogia reúne a trajetória da família Toledo desde suas origens espanholas e portuguesas, passando pela presença no México, pela Ilha Terceira nos Açores e pela chegada ao Brasil. O percurso acompanha os ramos Toledo, Rodovalho, Toledo Pisa e Toledo Rodovalho até a fixação em Limeira, São Paulo, onde a descendência alcança a 15ª geração.";
 
+type ExpansionMode = "path" | "full";
+type ExpansionModes = Record<string, ExpansionMode>;
+type PathChildByParent = Record<string, string>;
+
 function formatDate(date: string | null, year: number | null, approx: boolean): string {
   if (date) return approx ? `${date} aprox.` : date;
   if (year !== null) return approx ? `c. ${year}` : String(year);
@@ -103,7 +107,8 @@ function BookEntry({
 function PersonTree({
   person,
   personsById,
-  expandedIds,
+  expansionModes,
+  pathChildByParent,
   selectedPersonId,
   level,
   onSelect,
@@ -111,7 +116,8 @@ function PersonTree({
 }: {
   person: Person;
   personsById: ReadonlyMap<string, Person>;
-  expandedIds: ReadonlySet<string>;
+  expansionModes: ExpansionModes;
+  pathChildByParent: PathChildByParent;
   selectedPersonId: string | null;
   level: number;
   onSelect: (person: Person) => void;
@@ -120,7 +126,12 @@ function PersonTree({
   const children = person.children
     .map((childId) => personsById.get(childId))
     .filter((child): child is Person => child !== undefined);
-  const expanded = expandedIds.has(person.id);
+  const expansionMode = expansionModes[person.id];
+  const expanded = expansionMode !== undefined;
+  const visibleChildren =
+    expansionMode === "path"
+      ? children.filter((child) => child.id === pathChildByParent[person.id])
+      : children;
   const nextVisitedIds = new Set(visitedIds);
   nextVisitedIds.add(person.id);
 
@@ -135,14 +146,15 @@ function PersonTree({
         onSelect={onSelect}
       />
       {expanded
-        ? children
+        ? visibleChildren
             .filter((child) => !nextVisitedIds.has(child.id))
             .map((child) => (
               <PersonTree
                 key={`${person.id}-${child.id}`}
                 person={child}
                 personsById={personsById}
-                expandedIds={expandedIds}
+                expansionModes={expansionModes}
+                pathChildByParent={pathChildByParent}
                 selectedPersonId={selectedPersonId}
                 level={level + 1}
                 onSelect={onSelect}
@@ -299,7 +311,9 @@ export default function Home() {
   const { data, loading, error } = useFamilyData();
   const [query, setQuery] = useState("");
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+  const [expansionModes, setExpansionModes] = useState<ExpansionModes>({});
+  const [pathChildByParent, setPathChildByParent] =
+    useState<PathChildByParent>({});
 
   const personsById = useMemo(
     () => new Map((data?.persons ?? []).map((person) => [person.id, person])),
@@ -347,13 +361,16 @@ export default function Home() {
 
     if (person.children.length === 0) return;
 
-    setExpandedIds((current) => {
-      const next = new Set(current);
+    setExpansionModes((current) => {
+      const next = { ...current };
+      const currentMode = next[person.id];
 
-      if (next.has(person.id)) {
-        next.delete(person.id);
+      if (currentMode === "path") {
+        next[person.id] = "full";
+      } else if (currentMode === "full") {
+        delete next[person.id];
       } else {
-        next.add(person.id);
+        next[person.id] = "full";
       }
 
       return next;
@@ -385,18 +402,32 @@ export default function Home() {
 
   const revealPersonInHierarchy = (person: Person) => {
     const ancestorPathIds = getAncestorPathIds(person);
+    const nextPathChildByParent: PathChildByParent = {};
+
+    for (let index = 0; index < ancestorPathIds.length; index += 1) {
+      const ancestorId = ancestorPathIds[index];
+      const childId = ancestorPathIds[index + 1] ?? person.id;
+
+      if (!ancestorId) continue;
+
+      nextPathChildByParent[ancestorId] = childId;
+    }
 
     setSelectedPerson(person);
     setQuery("");
-    setExpandedIds((current) => {
-      const next = new Set(current);
+    setExpansionModes((current) => {
+      const next = { ...current };
 
       for (const ancestorId of ancestorPathIds) {
-        next.add(ancestorId);
+        next[ancestorId] = "path";
       }
 
       return next;
     });
+    setPathChildByParent((current) => ({
+      ...current,
+      ...nextPathChildByParent,
+    }));
   };
 
   if (loading) return <LoadingScreen totalPeople={7234} />;
@@ -487,7 +518,8 @@ export default function Home() {
                       key={person.id}
                       person={person}
                       personsById={personsById}
-                      expandedIds={expandedIds}
+                      expansionModes={expansionModes}
+                      pathChildByParent={pathChildByParent}
                       selectedPersonId={selectedPerson?.id ?? null}
                       level={0}
                       onSelect={selectAndTogglePerson}
