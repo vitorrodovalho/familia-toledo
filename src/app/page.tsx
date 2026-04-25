@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { LoadingScreen } from "@/components/shared/LoadingScreen";
 import { normalizeForSearch } from "@/components/shared/SearchBar";
@@ -20,6 +20,10 @@ const bookDescription =
 type ExpansionMode = "path" | "full";
 type ExpansionModes = Record<string, ExpansionMode>;
 type PathChildByParent = Record<string, string>;
+
+function getTreeRowId(personId: string): string {
+  return `person-tree-row-${personId}`;
+}
 
 function formatDate(date: string | null, year: number | null, approx: boolean): string {
   if (date) return approx ? `${date} aprox.` : date;
@@ -75,6 +79,7 @@ function BookEntry({
 
   return (
     <button
+      id={getTreeRowId(person.id)}
       className={`block w-full border-b border-[#ddd4c3] px-3 py-2 text-left leading-snug transition ${
         selected ? "bg-[#fff6e6]" : "hover:bg-[#fbf6ed]"
       }`}
@@ -314,6 +319,7 @@ export default function Home() {
   const [expansionModes, setExpansionModes] = useState<ExpansionModes>({});
   const [pathChildByParent, setPathChildByParent] =
     useState<PathChildByParent>({});
+  const [pendingScrollPersonId, setPendingScrollPersonId] = useState<string | null>(null);
 
   const personsById = useMemo(
     () => new Map((data?.persons ?? []).map((person) => [person.id, person])),
@@ -415,6 +421,7 @@ export default function Home() {
 
     setSelectedPerson(person);
     setQuery("");
+    setPendingScrollPersonId(person.id);
     setExpansionModes((current) => {
       const next = { ...current };
 
@@ -429,6 +436,19 @@ export default function Home() {
       ...nextPathChildByParent,
     }));
   };
+
+  useEffect(() => {
+    if (!pendingScrollPersonId || isSearching) return;
+
+    const animationFrameId = window.requestAnimationFrame(() => {
+      document
+        .getElementById(getTreeRowId(pendingScrollPersonId))
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setPendingScrollPersonId(null);
+    });
+
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, [isSearching, pendingScrollPersonId]);
 
   if (loading) return <LoadingScreen totalPeople={7234} />;
 
