@@ -9,9 +9,14 @@ export function Navigation() {
         <Link className="min-w-0 font-serif text-xl font-semibold text-[#b80000]" href="/">
           Família Toledo
         </Link>
-        <span className="hidden text-sm text-[#5d5344] sm:block">
-          Validação dos dados genealógicos
-        </span>
+        <div className="flex items-center gap-4 text-sm text-[#5d5344]">
+          <Link className="transition hover:text-[#b80000]" href="/">
+            Genealogia
+          </Link>
+          <Link className="transition hover:text-[#b80000]" href="/sobre">
+            Sobre
+          </Link>
+        </div>
       </nav>
     </header>
   );

@@ -66,7 +66,7 @@ export default function UniversePage() {
 
       <LoadingScreen
         loading={showLoading}
-        totalStories={data?.meta.total_persons ?? 2996}
+        totalPeople={data?.meta.total_persons ?? 7234}
       />
     </section>
   );

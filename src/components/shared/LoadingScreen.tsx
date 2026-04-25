@@ -6,13 +6,13 @@ import { useEffect, useState } from "react";
 interface LoadingScreenProps {
   loading?: boolean;
   minimumDurationMs?: number;
-  totalStories?: number;
+  totalPeople?: number;
 }
 
 export function LoadingScreen({
   loading = true,
   minimumDurationMs = 800,
-  totalStories = 2996,
+  totalPeople = 7234,
 }: LoadingScreenProps) {
   const [minimumElapsed, setMinimumElapsed] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -41,33 +41,29 @@ export function LoadingScreen({
       {visible ? (
         <motion.div
           animate={{ opacity: 1 }}
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-[#0A0F1A] px-6 text-sand"
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-[#f4efe7] px-6 text-[#111111]"
           exit={{ opacity: 0 }}
           initial={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="w-full max-w-sm text-center">
-            <div className="relative mx-auto mb-8 h-28 w-28">
-              {Array.from({ length: 9 }, (_, index) => (
-                <span
-                  key={index}
-                  className="absolute h-2 w-2 rounded-full bg-white shadow-[0_0_18px_rgba(255,255,255,0.9)]"
-                  style={{
-                    left: `${18 + ((index * 31) % 68)}%`,
-                    top: `${12 + ((index * 23) % 72)}%`,
-                    animation: `starlight 1.4s ease-in-out ${index * 0.12}s infinite alternate`,
-                  }}
-                />
-              ))}
-            </div>
-
-            <p className="font-serif text-2xl font-semibold text-white">
-              Carregando {totalStories.toLocaleString("pt-BR")} histórias...
+          <div className="w-full max-w-sm border border-[#cfc5b2] bg-[#fffdf8] px-8 py-10 text-center shadow-[0_18px_45px_rgba(63,46,25,0.12)]">
+            <p className="text-sm font-semibold text-[#111111]">1</p>
+            <p className="mt-8 font-serif text-3xl font-semibold italic leading-tight text-[#b80000]">
+              Genealogia da família Toledo
             </p>
-            <div className="mt-6 h-2 overflow-hidden bg-white/10">
+            <p className="mt-2 text-sm font-semibold text-[#111111]">
+              1466 a 2025
+            </p>
+
+            <div className="mx-auto mt-8 h-px w-28 bg-[#d8cdbb]" />
+
+            <p className="mt-8 text-sm text-[#3d352b]">
+              Carregando {totalPeople.toLocaleString("pt-BR")} histórias...
+            </p>
+            <div className="mt-5 h-2 overflow-hidden border border-[#d8cdbb] bg-white">
               <motion.div
                 animate={{ width: `${progress}%` }}
-                className="h-full bg-terracotta"
+                className="h-full bg-[#b80000]"
                 transition={{ ease: "linear", duration: 0.08 }}
               />
             </div>

@@ -14,6 +14,9 @@ const countryLabels: Record<string, string> = {
   PT: "Portugal",
 };
 
+const bookDescription =
+  "A genealogia reúne a trajetória da família Toledo desde suas origens espanholas e portuguesas, passando pela presença no México, pela Ilha Terceira nos Açores e pela chegada ao Brasil. O percurso acompanha os ramos Toledo, Rodovalho, Toledo Pisa e Toledo Rodovalho até a fixação em Limeira, São Paulo, onde a descendência alcança a 15ª geração.";
+
 function formatDate(date: string | null, year: number | null, approx: boolean): string {
   if (date) return approx ? `${date} aprox.` : date;
   if (year !== null) return approx ? `c. ${year}` : String(year);
@@ -101,8 +104,14 @@ function PersonBookPanel({
   if (!person) {
     return (
       <aside className="hidden border-l border-[#cfc5b2] bg-[#fffdf8] p-5 lg:block">
+        <p className="text-xs uppercase tracking-[0.18em] text-[#8b1a1a]">
+          Genealogia
+        </p>
+        <h2 className="mt-2 font-serif text-3xl font-semibold leading-tight text-[#111111]">
+          Família Toledo
+        </h2>
         <p className="text-sm leading-relaxed text-[#5d5344]">
-          Selecione uma pessoa na página para conferir os dados extraídos do livro.
+          {bookDescription}
         </p>
       </aside>
     );
@@ -256,7 +265,7 @@ export default function Home() {
     });
   }, [data?.persons, query]);
 
-  if (loading) return <LoadingScreen />;
+  if (loading) return <LoadingScreen totalPeople={7234} />;
 
   if (error) {
     return (
@@ -286,8 +295,10 @@ export default function Home() {
               1466 a 2025
             </p>
             <p className="mx-auto mt-5 max-w-2xl text-sm leading-relaxed text-[#3d352b]">
-              Página temporária para validação dos dados extraídos do livro.
-              Use a pesquisa para localizar nomes, lugares e descrições.
+              {bookDescription}
+            </p>
+            <p className="mt-5 text-sm text-[#6f6658]">
+              Geraldo Mario Toledo Rodovalho · Limeira, São Paulo, Brasil · 04 de março de 2025
             </p>
           </header>
 
@@ -316,7 +327,7 @@ export default function Home() {
               <div>
                 <p className="font-semibold">Ano e local nasc.</p>
                 <p className="text-[#3d352b]">
-                  Clique em um nome para abrir os detalhes ao lado.
+                  Registros genealógicos organizados por geração.
                 </p>
               </div>
               <div className="text-right">
