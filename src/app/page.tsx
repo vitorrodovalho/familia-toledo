@@ -49,10 +49,16 @@ function getParentsLabel(person: Person, personsById: ReadonlyMap<string, Person
 function BookEntry({
   person,
   selected,
+  level = 0,
+  expanded = false,
+  hasChildren = false,
   onSelect,
 }: {
   person: Person;
   selected: boolean;
+  level?: number;
+  expanded?: boolean;
+  hasChildren?: boolean;
   onSelect: (person: Person) => void;
 }) {
   const birthDate = formatDate(
@@ -70,8 +76,12 @@ function BookEntry({
       }`}
       type="button"
       onClick={() => onSelect(person)}
+      style={{ paddingLeft: `${0.75 + level * 1.25}rem` }}
     >
       <p className="text-[15px] text-[#111111]">
+        <span className="mr-2 inline-block w-4 text-center text-[#7b7163]">
+          {hasChildren ? (expanded ? "−" : "+") : ""}
+        </span>
         <span className="text-[#b80000]">{person.generation_level}. </span>
         <span className="font-semibold text-[#004eea] underline decoration-[#004eea]/50 underline-offset-2">
           {person.name}
@@ -87,6 +97,60 @@ function BookEntry({
         {description}
       </p>
     </button>
+  );
+}
+
+function PersonTree({
+  person,
+  personsById,
+  expandedIds,
+  selectedPersonId,
+  level,
+  onSelect,
+  visitedIds = new Set<string>(),
+}: {
+  person: Person;
+  personsById: ReadonlyMap<string, Person>;
+  expandedIds: ReadonlySet<string>;
+  selectedPersonId: string | null;
+  level: number;
+  onSelect: (person: Person) => void;
+  visitedIds?: ReadonlySet<string>;
+}) {
+  const children = person.children
+    .map((childId) => personsById.get(childId))
+    .filter((child): child is Person => child !== undefined);
+  const expanded = expandedIds.has(person.id);
+  const nextVisitedIds = new Set(visitedIds);
+  nextVisitedIds.add(person.id);
+
+  return (
+    <>
+      <BookEntry
+        person={person}
+        selected={selectedPersonId === person.id}
+        level={level}
+        expanded={expanded}
+        hasChildren={children.length > 0}
+        onSelect={onSelect}
+      />
+      {expanded
+        ? children
+            .filter((child) => !nextVisitedIds.has(child.id))
+            .map((child) => (
+              <PersonTree
+                key={`${person.id}-${child.id}`}
+                person={child}
+                personsById={personsById}
+                expandedIds={expandedIds}
+                selectedPersonId={selectedPersonId}
+                level={level + 1}
+                onSelect={onSelect}
+                visitedIds={nextVisitedIds}
+              />
+            ))
+        : null}
+    </>
   );
 }
 
@@ -235,6 +299,7 @@ export default function Home() {
   const { data, loading, error } = useFamilyData();
   const [query, setQuery] = useState("");
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
 
   const personsById = useMemo(
     () => new Map((data?.persons ?? []).map((person) => [person.id, person])),
@@ -265,6 +330,36 @@ export default function Home() {
     });
   }, [data?.persons, query]);
 
+  const rootPersons = useMemo(() => {
+    const persons = data?.persons ?? [];
+    const generationOne = persons.filter((person) => person.generation_level === 1);
+
+    if (generationOne.length > 0) return generationOne;
+
+    return persons.filter((person) => person.parents.length === 0);
+  }, [data?.persons]);
+
+  const normalizedQuery = normalizeForSearch(query);
+  const isSearching = normalizedQuery.length >= 2;
+
+  const selectAndTogglePerson = (person: Person) => {
+    setSelectedPerson(person);
+
+    if (person.children.length === 0) return;
+
+    setExpandedIds((current) => {
+      const next = new Set(current);
+
+      if (next.has(person.id)) {
+        next.delete(person.id);
+      } else {
+        next.add(person.id);
+      }
+
+      return next;
+    });
+  };
+
   if (loading) return <LoadingScreen totalPeople={7234} />;
 
   if (error) {
@@ -280,7 +375,7 @@ export default function Home() {
     );
   }
 
-  const total = data?.meta.total_persons ?? filteredPersons.length;
+  const total = data?.meta.total_persons ?? data?.persons.length ?? filteredPersons.length;
 
   return (
     <section className="min-h-[calc(100vh-4rem)] bg-[#f4efe7] px-3 py-5 text-[#111111] md:px-6">
@@ -316,7 +411,9 @@ export default function Home() {
                 onChange={(event) => setQuery(event.target.value)}
               />
               <p className="text-xs text-[#6f6658]">
-                {filteredPersons.length.toLocaleString("pt-BR")} de{" "}
+                {isSearching
+                  ? `${filteredPersons.length.toLocaleString("pt-BR")} de `
+                  : ""}
                 {total.toLocaleString("pt-BR")} registros
               </p>
             </div>
@@ -327,7 +424,7 @@ export default function Home() {
               <div>
                 <p className="font-semibold">Ano e local nasc.</p>
                 <p className="text-[#3d352b]">
-                  Registros genealógicos organizados por geração.
+                  Registros genealógicos organizados por hierarquia.
                 </p>
               </div>
               <div className="text-right">
@@ -337,14 +434,26 @@ export default function Home() {
             </div>
 
             <div className="border-t border-[#ddd4c3]">
-              {filteredPersons.map((person) => (
-                <BookEntry
-                  key={person.id}
-                  person={person}
-                  selected={selectedPerson?.id === person.id}
-                  onSelect={setSelectedPerson}
-                />
-              ))}
+              {isSearching
+                ? filteredPersons.map((person) => (
+                    <BookEntry
+                      key={person.id}
+                      person={person}
+                      selected={selectedPerson?.id === person.id}
+                      onSelect={selectAndTogglePerson}
+                    />
+                  ))
+                : rootPersons.map((person) => (
+                    <PersonTree
+                      key={person.id}
+                      person={person}
+                      personsById={personsById}
+                      expandedIds={expandedIds}
+                      selectedPersonId={selectedPerson?.id ?? null}
+                      level={0}
+                      onSelect={selectAndTogglePerson}
+                    />
+                  ))}
             </div>
           </div>
         </div>
@@ -353,7 +462,7 @@ export default function Home() {
           person={selectedPerson}
           personsById={personsById}
           onClose={() => setSelectedPerson(null)}
-          onSelect={setSelectedPerson}
+          onSelect={selectAndTogglePerson}
         />
       </div>
     </section>
