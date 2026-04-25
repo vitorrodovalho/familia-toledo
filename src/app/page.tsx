@@ -360,6 +360,45 @@ export default function Home() {
     });
   };
 
+  const getAncestorPathIds = (
+    person: Person,
+    visitedIds = new Set<string>(),
+  ): string[] => {
+    if (visitedIds.has(person.id)) return [];
+
+    const nextVisitedIds = new Set(visitedIds);
+    nextVisitedIds.add(person.id);
+
+    for (const parentId of person.parents) {
+      const parent = personsById.get(parentId);
+
+      if (!parent) continue;
+
+      return [
+        ...getAncestorPathIds(parent, nextVisitedIds),
+        parent.id,
+      ];
+    }
+
+    return [];
+  };
+
+  const revealPersonInHierarchy = (person: Person) => {
+    const ancestorPathIds = getAncestorPathIds(person);
+
+    setSelectedPerson(person);
+    setQuery("");
+    setExpandedIds((current) => {
+      const next = new Set(current);
+
+      for (const ancestorId of ancestorPathIds) {
+        next.add(ancestorId);
+      }
+
+      return next;
+    });
+  };
+
   if (loading) return <LoadingScreen totalPeople={7234} />;
 
   if (error) {
@@ -440,7 +479,7 @@ export default function Home() {
                       key={person.id}
                       person={person}
                       selected={selectedPerson?.id === person.id}
-                      onSelect={selectAndTogglePerson}
+                      onSelect={revealPersonInHierarchy}
                     />
                   ))
                 : rootPersons.map((person) => (
@@ -462,7 +501,7 @@ export default function Home() {
           person={selectedPerson}
           personsById={personsById}
           onClose={() => setSelectedPerson(null)}
-          onSelect={selectAndTogglePerson}
+          onSelect={revealPersonInHierarchy}
         />
       </div>
     </section>
