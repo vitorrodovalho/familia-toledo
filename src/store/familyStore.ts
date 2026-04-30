@@ -3,7 +3,6 @@
 import { create } from "zustand";
 import type { Branch } from "@/types/family";
 
-type ActiveView = "universe" | "timeline";
 type CameraTarget = [number, number, number];
 
 interface FamilyStore {
@@ -19,8 +18,6 @@ interface FamilyStore {
   toggleBranch: (branch: Branch) => void;
   resetBranches: () => void;
 
-  activeView: ActiveView;
-  setActiveView: (view: ActiveView) => void;
   isPanelOpen: boolean;
   setIsPanelOpen: (open: boolean) => void;
 
@@ -63,8 +60,6 @@ export const useFamilyStore = create<FamilyStore>((set) => ({
     }),
   resetBranches: () => set({ activeBranches: createAllBranchesSet() }),
 
-  activeView: "universe",
-  setActiveView: (view) => set({ activeView: view }),
   isPanelOpen: false,
   setIsPanelOpen: (open) => set({ isPanelOpen: open }),
 
